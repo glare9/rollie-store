@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 48" role="img" aria-label="Rollie">
+  <circle cx="24" cy="24" r="20" fill="#f4a259"/>
+  <circle cx="17" cy="20" r="3" fill="#3d2c1e"/><circle cx="31" cy="20" r="3" fill="#3d2c1e"/>
+  <ellipse cx="24" cy="29" rx="5" ry="3.5" fill="#3d2c1e"/>
+  <text x="52" y="32" font-family="ui-rounded, system-ui, sans-serif" font-size="24" font-weight="700" fill="#3d2c1e">Rollie</text>
+</svg>

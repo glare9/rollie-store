@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Treat photo coming soon">
+  <rect width="400" height="300" fill="#fbe8d3"/>
+  <g fill="#f4a259" transform="translate(200 140)">
+    <ellipse cx="0" cy="18" rx="34" ry="28"/>
+    <ellipse cx="-38" cy="-22" rx="14" ry="18"/><ellipse cx="-13" cy="-42" rx="14" ry="18"/>
+    <ellipse cx="13" cy="-42" rx="14" ry="18"/><ellipse cx="38" cy="-22" rx="14" ry="18"/>
+  </g>
+  <text x="200" y="250" text-anchor="middle" font-family="system-ui, sans-serif" font-size="18" fill="#8a5a2b">Photo coming soon</text>
+</svg>
