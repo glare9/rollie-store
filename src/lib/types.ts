@@ -8,6 +8,7 @@ export type Product = {
   stock: number;
   is_active: boolean;
   sort_order: number;
+  updated_at?: string;
 };
 
 export type Customer = {
