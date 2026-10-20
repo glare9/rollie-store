@@ -30,14 +30,28 @@ Online shop for Rollie seasonal pet treats. Next.js on Vercel, Supabase database
 
 In Supabase, open **Table Editor → store_settings** and put your UEN (or PayNow mobile number) in `paynow_uen`. Until then the order page shows a sample QR marked "do not pay". If you'd rather use a fixed QR image, leave `paynow_uen` empty and put the image link in `paynow_qr_url` instead (customers then type the amount themselves).
 
-The admin pages (step 3) come next.
+## Admin pages (step 3)
+
+Sign in at `/admin` with the password in the `ADMIN_PASSWORD` environment variable.
+
+- **Orders** (`/admin`): grouped by delivery day with each day's treat totals, so it doubles as the delivery run sheet. Filter by awaiting payment, to deliver, delivered, cancelled or all.
+  - **Payment validated** marks the order paid and emails the customer a confirmation through Resend.
+  - **Mark delivered**, **Resend confirmation email**, and **Cancel order** (puts the stock back and frees the delivery spot).
+- **Products** (`/admin/products`): edit name, description, price, stock, display order and photo; untick "On sale" to hide a treat; add new treats. Photos go to a public Supabase Storage bucket, `product-images`, created on the first upload.
+- **Customers** (`/admin/customers`): search by name, pet, email, phone or postal code; order count, spend and last delivery; edit details and private notes.
+- **Settings** (`/admin/settings`): PayNow UEN or mobile number, orders per day, booking window, store name, reply-to email, and weekend days you're not delivering.
+
+### Email setup
+
+Add `RESEND_API_KEY` in Vercel. Until a domain is verified in Resend, emails come from `onboarding@resend.dev` and Resend only delivers them to your own Resend account address. Once your domain is verified, set `EMAIL_FROM` (e.g. `Rollie <orders@rollietreats.sg>`).
 
 ## Account setup
 
 1. **GitHub**: create an empty private repo (e.g. `rollie-store`) and push this folder to it.
 2. **Supabase** (supabase.com, free plan): create a project in the Singapore region. In the SQL editor run `supabase/migrations/0001_init.sql`, then `supabase/seed.sql`. Copy the project URL, anon key and service role key from Project Settings > API.
 3. **Vercel** (vercel.com, Hobby plan): import the GitHub repo and add the three Supabase values as environment variables (names in `.env.example`).
-4. **Resend** (resend.com, free plan): only needed for step 3. Create an API key and verify the domain once you have it.
+4. **Resend** (resend.com, free plan): create an API key and add it to Vercel as `RESEND_API_KEY`. Verify the domain once you have it.
+5. **Admin password**: add `ADMIN_PASSWORD` in Vercel with a password of your choice.
 
 ## Run locally
 
