@@ -1,21 +1,9 @@
 import Image from "next/image";
-import { createClient } from "@/lib/supabase/server";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
-import { formatPrice, type Product } from "@/lib/types";
+import { getProducts } from "@/lib/catalogue";
+import { formatPrice } from "@/lib/types";
+import { ProductActions } from "@/components/ProductActions";
 
 export const dynamic = "force-dynamic";
-
-async function getProducts(): Promise<{ products: Product[]; error?: string }> {
-  if (!isSupabaseConfigured) {
-    return { products: [], error: "Supabase isn't connected yet. Add the keys from .env.example to .env.local." };
-  }
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("sort_order");
-  return { products: data ?? [], error: error?.message };
-}
 
 export default async function Home() {
   const { products, error } = await getProducts();
@@ -33,7 +21,7 @@ export default async function Home() {
 
       <ul className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {products.map((p) => (
-          <li key={p.id} className="rounded-xl bg-white shadow-sm overflow-hidden">
+          <li key={p.id} className="rounded-xl bg-white shadow-sm overflow-hidden flex flex-col">
             <Image
               src={p.image_url || "/placeholder-treat.svg"}
               alt={p.name}
@@ -41,13 +29,16 @@ export default async function Home() {
               height={300}
               className="w-full h-auto"
             />
-            <div className="p-4 space-y-1">
-              <div className="flex justify-between font-semibold">
-                <span>{p.name}</span>
-                <span>{formatPrice(p.price_cents)}</span>
+            <div className="p-4 space-y-3 flex-1 flex flex-col">
+              <div className="space-y-1 flex-1">
+                <div className="flex justify-between font-semibold">
+                  <span>{p.name}</span>
+                  <span>{formatPrice(p.price_cents)}</span>
+                </div>
+                <p className="text-sm opacity-75">{p.description}</p>
+                {p.stock > 0 && p.stock <= 10 && <p className="text-xs opacity-60">Only {p.stock} left</p>}
               </div>
-              <p className="text-sm opacity-75">{p.description}</p>
-              <p className="text-xs opacity-60">{p.stock > 0 ? `${p.stock} left` : "Sold out"}</p>
+              <ProductActions productId={p.id} slug={p.slug} stock={p.stock} />
             </div>
           </li>
         ))}
