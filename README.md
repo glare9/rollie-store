@@ -17,10 +17,20 @@ Online shop for Rollie seasonal pet treats. Next.js on Vercel, Supabase database
   - Row level security: the public key can only read active products and time slots. Customers and orders are admin-only.
 - `supabase/seed.sql`: four placeholder products.
 - `src/lib/supabase/`: browser, server, and admin (service role) clients.
-- `src/app/page.tsx`: placeholder homepage listing products, to check the database is connected.
 - `public/rollie-logo.svg`, `public/placeholder-treat.svg`: placeholder branding. Replace with real files of the same name.
 
-The customer checkout (step 2) and the admin pages (step 3) come next.
+## Customer flow (step 2)
+
+- `/`: treats with a quantity picker, **Add to cart** and **Buy now** (checks out that one treat without touching the cart).
+- `/cart`: change quantities or remove items. The cart is saved in the customer's browser.
+- `/checkout`: name, pet name, email, phone, address, postal code, optional note; weekend delivery day (full days greyed out) and time slot. Calls `place_order()`, which reserves the stock.
+- `/order/<id>`: order reference, delivery details and a PayNow QR code with the amount and order reference filled in. The link uses a random order id, so only the customer can open it.
+
+### PayNow setup
+
+In Supabase, open **Table Editor → store_settings** and put your UEN (or PayNow mobile number) in `paynow_uen`. Until then the order page shows a sample QR marked "do not pay". If you'd rather use a fixed QR image, leave `paynow_uen` empty and put the image link in `paynow_qr_url` instead (customers then type the amount themselves).
+
+The admin pages (step 3) come next.
 
 ## Account setup
 
