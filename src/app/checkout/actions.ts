@@ -13,7 +13,9 @@ export type CheckoutDetails = {
   note: string;
 };
 
-export type PlaceOrderResult = { ok: true; orderId: string } | { ok: false; error: string };
+export type PlaceOrderResult =
+  | { ok: true; orderId: string; orderRef: string; subtotalCents: number }
+  | { ok: false; error: string };
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -57,5 +59,5 @@ export async function placeOrder(input: {
   }
   const row = Array.isArray(data) ? data[0] : data;
   if (!row?.order_id) return { ok: false, error: "Something went wrong placing your order. Please try again." };
-  return { ok: true, orderId: row.order_id };
+  return { ok: true, orderId: row.order_id, orderRef: row.order_ref, subtotalCents: row.subtotal_cents };
 }

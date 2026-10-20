@@ -11,14 +11,32 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Shown when no PayNow UEN or QR image has been set in store_settings yet.
 const SAMPLE_UEN = "T00XX0000X";
 
-export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
+type OrderView = {
+  order_ref: string;
+  status: string;
+  delivery_date: string | null;
+  subtotal_cents: number;
+  pet_name: string | null;
+  delivery_time_slots: unknown;
+  order_items: unknown;
+  customers: unknown;
+};
+
+export default async function OrderPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ ref?: string; amt?: string }>;
+}) {
   const { id } = await params;
+  const { ref, amt } = await searchParams;
   if (!UUID.test(id)) notFound();
 
   // Orders are private, so read with the service role. The order id in the URL is
   // a random UUID that only the customer who placed the order has.
   const supabase = createAdminClient();
-  const [{ data: order }, { data: settings }] = await Promise.all([
+  const [{ data: found, error }, { data: settings }] = await Promise.all([
     supabase
       .from("orders")
       .select("order_ref, status, delivery_date, subtotal_cents, pet_name, delivery_time_slots(label), order_items(product_name, quantity, unit_price_cents), customers(full_name, email)")
@@ -26,7 +44,32 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
       .maybeSingle(),
     supabase.from("store_settings").select("store_name, paynow_uen, paynow_qr_url").maybeSingle(),
   ]);
-  if (!order) notFound();
+
+  // If the order can't be read (usually SUPABASE_SERVICE_ROLE_KEY holds the wrong key in
+  // Vercel), still show the payment QR from the ref and amount the checkout passed along.
+  let order: OrderView | null = found;
+  let problem = "";
+  if (!order) {
+    problem = error
+      ? `${error.code ?? "error"}: ${error.message}`
+      : process.env.SUPABASE_SERVICE_ROLE_KEY === process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+          process.env.SUPABASE_SERVICE_ROLE_KEY?.startsWith("sb_publishable_")
+        ? "service key is the public key"
+        : "order not readable";
+    console.error(`Order page could not load order ${id}: ${problem}`);
+    const amount = parseInt(amt ?? "", 10);
+    if (!ref || !/^RL\d+$/.test(ref) || !Number.isFinite(amount) || amount < 0) notFound();
+    order = {
+      order_ref: ref,
+      status: "pending_payment",
+      delivery_date: null,
+      subtotal_cents: amount,
+      pet_name: null,
+      delivery_time_slots: null,
+      order_items: [],
+      customers: null,
+    };
+  }
 
   const uen = settings?.paynow_uen?.trim();
   const isSample = !uen && !settings?.paynow_qr_url;
@@ -46,13 +89,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
   const slot = order.delivery_time_slots as unknown as { label: string } | null;
   const customer = order.customers as unknown as { full_name: string; email: string } | null;
   const items = (order.order_items ?? []) as { product_name: string; quantity: number; unit_price_cents: number }[];
-  const [y, m, d] = order.delivery_date.split("-").map(Number);
-  const deliveryDay = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-SG", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  });
+  const deliveryDay = order.delivery_date
+    ? new Date(`${order.delivery_date}T00:00:00Z`).toLocaleDateString("en-SG", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        timeZone: "UTC",
+      })
+    : null;
 
   return (
     <div className="max-w-md mx-auto space-y-6">
@@ -101,28 +145,35 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
         </section>
       )}
 
-      <section className="rounded-xl bg-white shadow-sm p-5 space-y-3 text-sm">
-        <h2 className="font-semibold">Delivery</h2>
-        <p>
-          {deliveryDay}
-          {slot ? `, ${slot.label}` : ""}
+      {deliveryDay ? (
+        <section className="rounded-xl bg-white shadow-sm p-5 space-y-3 text-sm">
+          <h2 className="font-semibold">Delivery</h2>
+          <p>
+            {deliveryDay}
+            {slot ? `, ${slot.label}` : ""}
+          </p>
+          <h2 className="font-semibold pt-2">Treats{order.pet_name ? ` for ${order.pet_name}` : ""}</h2>
+          <ul className="space-y-1">
+            {items.map((i) => (
+              <li key={i.product_name} className="flex justify-between">
+                <span>
+                  {i.product_name} × {i.quantity}
+                </span>
+                <span>{formatPrice(i.unit_price_cents * i.quantity)}</span>
+              </li>
+            ))}
+          </ul>
+          <div className="flex justify-between font-semibold border-t border-black/5 pt-2">
+            <span>Total</span>
+            <span>{formatPrice(order.subtotal_cents)}</span>
+          </div>
+        </section>
+      ) : (
+        <p className="text-center text-sm opacity-75">
+          Your delivery day and treats are saved with your order.
+          {problem && <span className="block text-xs opacity-50 pt-1">({problem})</span>}
         </p>
-        <h2 className="font-semibold pt-2">Treats{order.pet_name ? ` for ${order.pet_name}` : ""}</h2>
-        <ul className="space-y-1">
-          {items.map((i) => (
-            <li key={i.product_name} className="flex justify-between">
-              <span>
-                {i.product_name} × {i.quantity}
-              </span>
-              <span>{formatPrice(i.unit_price_cents * i.quantity)}</span>
-            </li>
-          ))}
-        </ul>
-        <div className="flex justify-between font-semibold border-t border-black/5 pt-2">
-          <span>Total</span>
-          <span>{formatPrice(order.subtotal_cents)}</span>
-        </div>
-      </section>
+      )}
 
       <p className="text-center text-xs opacity-60">Bookmark or screenshot this page to come back to it.</p>
     </div>
