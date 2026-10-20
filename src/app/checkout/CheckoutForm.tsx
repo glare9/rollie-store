@@ -45,6 +45,7 @@ export function CheckoutForm({
   const [deliverySlot, setDeliverySlot] = useState("");
   const [error, setError] = useState("");
   const [pending, startTransition] = useTransition();
+  const [placed, setPlaced] = useState(false);
 
   // Remember returning customers' details on this device (never the note).
   useEffect(() => {
@@ -60,6 +61,16 @@ export function CheckoutForm({
     .filter((r) => r.product);
   const subtotal = rows.reduce((sum, r) => sum + r.product!.price_cents * r.quantity, 0);
 
+  // Once the order is in, keep showing this while the payment page loads, so clearing
+  // the cart doesn't flash the "Your cart is empty" screen.
+  if (placed) {
+    return (
+      <div className="rounded-xl bg-white shadow-sm p-8 text-center space-y-2" role="status">
+        <p className="font-semibold">Order placed!</p>
+        <p className="text-sm opacity-75">Taking you to the PayNow payment page…</p>
+      </div>
+    );
+  }
   if (!buyNow && !cart.ready) return null;
   if (rows.length === 0) {
     return (
@@ -96,6 +107,7 @@ export function CheckoutForm({
       try {
         localStorage.setItem(DETAILS_KEY, JSON.stringify({ ...details, note: undefined }));
       } catch {}
+      setPlaced(true);
       if (!buyNow) cart.clear();
       // Ref and amount ride along so the payment QR still shows if the order can't be read back.
       router.push(`/order/${result.orderId}?ref=${encodeURIComponent(result.orderRef)}&amt=${result.subtotalCents}`);
