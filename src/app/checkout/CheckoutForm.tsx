@@ -97,7 +97,8 @@ export function CheckoutForm({
         localStorage.setItem(DETAILS_KEY, JSON.stringify({ ...details, note: undefined }));
       } catch {}
       if (!buyNow) cart.clear();
-      router.push(`/order/${result.orderId}`);
+      // Ref and amount ride along so the payment QR still shows if the order can't be read back.
+      router.push(`/order/${result.orderId}?ref=${encodeURIComponent(result.orderRef)}&amt=${result.subtotalCents}`);
     });
   };
 
